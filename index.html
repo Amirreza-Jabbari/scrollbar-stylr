@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Scrollbar Maker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Font definition for preformatted text and code blocks */
+        pre, .font-source-code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        /* Placeholder for elements that will have their scrollbars dynamically styled */
+        .scrollbar-preview-container, body {
+            /* These will be dynamically updated by JS for the preview */
+        }
+    </style>
+    <style id="styleThumbColor"></style>
+    <style id="styleTrackColor"></style>
+    <style id="styleColor"></style>
+    <style id="styleWidthStyle"></style>
+    <style id="styleWidth"></style>
+    <style id="styleBorderRadius"></style>
+    <style id="styleBorder"></style>
+</head>
+<body class="bg-slate-900 text-slate-300 font-sans flex flex-col items-center min-h-screen pt-10 sm:pt-16 px-4 selection:bg-amber-500 selection:text-slate-900">
+
+    <div id="infoModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50 transition-opacity duration-300 opacity-0">
+        <div class="bg-slate-800 p-6 sm:p-8 rounded-xl shadow-2xl max-w-lg w-full relative border border-slate-700 transform transition-all duration-300 scale-95">
+            <button id="closeInfoModal" aria-label="Close" class="absolute top-3 right-3 text-slate-500 hover:text-amber-400 transition-colors p-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-semibold text-white mb-4">How This Works</h2>
+            <div class="space-y-3 text-slate-400 text-sm">
+                <p>Use the controls on the left to customize the browser's scrollbar appearance.</p>
+                <p>Your changes will be reflected live on this page's main scrollbar and in the "Live Preview" box.</p>
+                <p>Once you're satisfied, copy the generated CSS from the "Generated CSS" panel to use in your own projects.</p>
+                <p><strong class="text-slate-300">Browser Compatibility:</strong> Scrollbar styling behaves differently across browsers.
+                    Firefox uses `scrollbar-width` and `scrollbar-color`. WebKit-based browsers (Chrome, Edge, Safari, Opera) use `::-webkit-scrollbar` pseudo-elements. The generated code includes styles for both.
+                </p>
+                <p>Test your design in multiple browsers for the best results!</p>
+            </div>
+            <button id="dismissInfoModal" class="mt-6 w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold py-2.5 px-4 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-slate-800">
+                Got it!
+            </button>
+        </div>
+    </div>
+
+    <header class="text-center mb-10 sm:mb-12">
+        <h1 class="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-300 to-orange-400 pb-1">
+            Scrollbar Stylr
+        </h1>
+        <p class="mt-3 text-base sm:text-lg text-slate-400 max-w-xl mx-auto">
+            Visually design custom browser scrollbars and generate the CSS. Simple, fast, and live!
+        </p>
+        <button id="openInfoModal" class="mt-5 text-sm text-amber-400 hover:text-amber-300 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-amber-400 rounded-sm">
+            How does this work?
+        </button>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 w-full max-w-7xl">
+        <section class="lg:col-span-4 bg-slate-800/70 border border-slate-700/70 p-5 sm:p-6 rounded-xl shadow-xl">
+            <h2 class="text-xl font-semibold text-white mb-6 border-b border-slate-700 pb-3">Customize</h2>
+            <ul class="space-y-4">
+                <li class="flex items-center justify-between gap-3">
+                    <label for="thumbColor" class="text-sm text-slate-300 whitespace-nowrap">Thumb Color:</label>
+                    <input type="color" id="thumbColor" name="thumbColor" value="#FFC107" class="bg-transparent w-8 h-8 p-0 border-2 border-slate-600 rounded-md cursor-pointer hover:border-amber-400 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-1 focus:ring-offset-slate-800">
+                </li>
+                <li class="flex items-center justify-between gap-3">
+                    <label for="trackColor" class="text-sm text-slate-300 whitespace-nowrap">Track Color:</label>
+                    <input type="color" id="trackColor" name="trackColor" value="#4A5568" class="bg-transparent w-8 h-8 p-0 border-2 border-slate-600 rounded-md cursor-pointer hover:border-amber-400 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-1 focus:ring-offset-slate-800">
+                </li>
+                <li class="flex items-center justify-between gap-3">
+                    <label for="widthStyle" class="text-sm text-slate-300 whitespace-nowrap">Width Style <span class="text-xs text-slate-500">(FX):</span></label>
+                    <select id="widthStyle" name="widthStyle" class="form-input-style w-full max-w-[120px]">
+                        <option value="auto" selected>Auto</option>
+                        <option value="thin">Thin</option>
+                        <option value="none">None</option>
+                    </select>
+                </li>
+                <li class="flex items-center justify-between gap-3">
+                    <label for="width" class="text-sm text-slate-300 whitespace-nowrap">Width <span class="text-xs text-slate-500">(WK):</span></label>
+                    <div class="flex items-center gap-1">
+                        <input type="number" id="width" name="width" value="12" min="0" max="40" class="form-input-style w-16 text-center">
+                        <span class="text-xs text-slate-500">px</span>
+                    </div>
+                </li>
+                <li class="flex items-center justify-between gap-3">
+                    <label for="borderRadius" class="text-sm text-slate-300 whitespace-nowrap">Thumb Radius:</label>
+                     <div class="flex items-center gap-1">
+                        <input type="number" id="borderRadius" name="borderRadius" value="6" min="0" max="20" class="form-input-style w-16 text-center">
+                        <span class="text-xs text-slate-500">px</span>
+                    </div>
+                </li>
+                 <li class="flex items-center justify-between gap-3">
+                    <label for="borderWidth" class="text-sm text-slate-300 whitespace-nowrap">Thumb Border:</label>
+                    <div class="flex items-center gap-1">
+                        <input type="number" id="borderWidth" name="borderWidth" value="2" min="0" max="10" class="form-input-style w-16 text-center">
+                        <span class="text-xs text-slate-500">px</span>
+                    </div>
+                </li>
+                <li class="flex items-center justify-between gap-3">
+                    <label for="borderStyle" class="text-sm text-slate-300 whitespace-nowrap">Border Style:</label>
+                    <select id="borderStyle" name="borderStyle" class="form-input-style w-full max-w-[120px]">
+                        <option value="solid" selected>Solid</option>
+                        <option value="none">None</option>
+                        <option value="dotted">Dotted</option>
+                        <option value="dashed">Dashed</option>
+                        <option value="double">Double</option>
+                    </select>
+                </li>
+                <li class="flex items-center justify-between gap-3">
+                    <label for="borderColor" class="text-sm text-slate-300 whitespace-nowrap">Border Color:</label>
+                    <input type="color" id="borderColor" name="borderColor" value="#4A5568" class="bg-transparent w-8 h-8 p-0 border-2 border-slate-600 rounded-md cursor-pointer hover:border-amber-400 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-1 focus:ring-offset-slate-800">
+                </li>
+            </ul>
+        </section>
+
+        <section class="lg:col-span-8 space-y-6 sm:space-y-8">
+            <div class="bg-slate-800/70 border border-slate-700/70 p-5 sm:p-6 rounded-xl shadow-xl">
+                <h2 class="text-xl font-semibold text-white mb-4">Live Preview</h2>
+                <div id="scrollbarPreview" class="scrollbar-preview-container bg-slate-200 text-slate-700 p-4 rounded-lg h-64 overflow-y-scroll prose prose-sm max-w-none">
+                    <h4>Scrollable Content Area</h4>
+                    <p>This area demonstrates your custom scrollbar. As you adjust the controls, the scrollbar here (and on the whole page) will update in real-time.</p>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+                    <ul><li>List item one</li><li>List item two</li><li>List item three</li></ul>
+                    <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                    <div class="h-48"></div> <p>More content to ensure scrolling...</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/70 border border-slate-700/70 p-5 sm:p-6 rounded-xl shadow-xl">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-3 sm:gap-0">
+                    <h2 class="text-xl font-semibold text-white">Generated CSS</h2>
+                    <button id="copyCssButton" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-900 font-semibold py-2.5 px-5 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-slate-800">
+                        Copy CSS
+                    </button>
+                </div>
+                <pre id="cssCode" class="font-source-code text-xs bg-slate-900/80 p-4 rounded-lg overflow-x-auto whitespace-pre-wrap break-all ring-1 ring-slate-700">/* ===== Scrollbar CSS ===== */
+  /* Firefox */
+  * {
+    scrollbar-width: <span class="displayWidthStyle">auto</span>;
+    scrollbar-color: <span class="displayThumbColor">#FFC107</span> <span class="displayTrackColor">#4A5568</span>;
+  }
+
+  /* Chrome, Edge, and Safari */
+  *::-webkit-scrollbar {
+    width: <span class="displayWidth">12</span>px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: <span class="displayTrackColor">#4A5568</span>;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: <span class="displayThumbColor">#FFC107</span>;
+    border-radius: <span class="displayBorderRadius">6</span>px;
+    border: <span class="displayBorderWidth">2</span>px <span class="displayBorderStyle">solid</span> <span class="displayBorderColor">#4A5568</span>;
+  }</pre>
+            </div>
+        </section>
+    </main>
+
+    <footer class="text-center py-10 mt-8 sm:mt-12 text-slate-600 text-sm">
+        <p>&copy; <span id="copyrightYear"></span>Scrollbar Stylr by Amirreza Jabbari. Create beautiful scrollbars with ease.</p>
+    </footer>
+
+    <div id="debugger" class="fixed bottom-0 left-0 right-0 bg-slate-950/90 border-t border-slate-700 text-white p-3 max-h-48 overflow-y-auto text-xs font-mono hidden z-40 shadow-2xl">
+        <div class="flex justify-between items-center mb-1">
+            <h3 class="text-sm font-bold text-slate-400">Style Debugger</h3>
+            <button id="closeDebuggerButton" class="text-xs text-slate-500 hover:text-slate-300">&times; close</button>
+        </div>
+        <pre id="styleChecker" class="whitespace-pre-wrap"></pre>
+    </div>
+    
+    <script>
+    // Common class for styled form inputs (select, number)
+    const formInputStyleClasses = "bg-slate-700 border border-slate-600 text-slate-200 text-sm rounded-md p-1.5 focus:ring-1 focus:ring-amber-400 focus:border-amber-400 focus:outline-none transition-colors";
+    document.querySelectorAll('select.form-input-style, input[type="number"].form-input-style').forEach(el => {
+        el.classList.add(...formInputStyleClasses.split(' '));
+    });
+    
+    const PREVIEW_DIV_ID = 'scrollbarPreview';
+
+    /* ===== Helper Functions ===== */
+    function copyToClipboard(inputText) {
+        navigator.clipboard.writeText(inputText).then(() => {
+            const copyButton = document.getElementById('copyCssButton');
+            const originalText = copyButton.textContent;
+            copyButton.textContent = 'Copied!';
+            setTimeout(() => {
+                copyButton.textContent = originalText;
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert("Failed to copy text. See console for details.");
+        });
+    }
+
+    function updateStyleChecker() {
+        const debuggerElement = document.getElementById('debugger');
+        if (!debug) {
+            if (!debuggerElement.classList.contains('hidden')) {
+                debuggerElement.classList.add('hidden');
+            }
+            return;
+        }
+        if (debuggerElement.classList.contains('hidden')) {
+             debuggerElement.classList.remove('hidden');
+        }
+
+        let styleCheckerContent = "";
+        const styleElements = document.querySelectorAll('style[id^="style"]');
+        styleElements.forEach(styleEl => {
+            if (!styleEl.id) return;
+            styleCheckerContent += `STYLE ID: ${styleEl.id}\n`;
+            styleCheckerContent += `---------------------------------------\n`;
+            styleCheckerContent += styleEl.innerHTML.trim() ? styleEl.innerHTML : "[EMPTY]\n";
+            styleCheckerContent += '\n\n';
+        });
+        document.getElementById('styleChecker').textContent = styleCheckerContent;
+    }
+
+    function getInputValue(inputId) { return document.getElementById(inputId).value; }
+
+    function updateDisplayCSS(className, value) {
+        document.querySelectorAll('.' + className).forEach(el => el.textContent = String(value).trim());
+    }
+
+    function updateThumbColor() {
+        thumbColor = getInputValue('thumbColor'); // Set global for updateCombinedColorStyles
+        const cssRule = `
+          body::-webkit-scrollbar-thumb, #${PREVIEW_DIV_ID}::-webkit-scrollbar-thumb { background-color: ${thumbColor}; }
+          *::-webkit-scrollbar-thumb { background-color: ${thumbColor}; } /* For generated code block */`;
+        document.getElementById('styleThumbColor').innerHTML = cssRule;
+        updateCombinedColorStyles();
+        updateDisplayCSS('displayThumbColor', thumbColor);
+        updateStyleChecker();
+    }
+
+    function updateTrackColor() {
+        trackColor = getInputValue('trackColor'); // Set global for updateCombinedColorStyles
+        const cssRule = `
+          body::-webkit-scrollbar-track, #${PREVIEW_DIV_ID}::-webkit-scrollbar-track { background: ${trackColor}; }
+          *::-webkit-scrollbar-track { background: ${trackColor}; } /* For generated code block */`;
+        document.getElementById('styleTrackColor').innerHTML = cssRule;
+        updateCombinedColorStyles();
+        updateDisplayCSS('displayTrackColor', trackColor);
+        updateStyleChecker();
+    }
+    
+    function updateCombinedColorStyles() { // For Firefox scrollbar-color
+         document.getElementById('styleColor').innerHTML = `
+          body, #${PREVIEW_DIV_ID} { scrollbar-color: ${thumbColor} ${trackColor}; }
+          * { scrollbar-color: ${thumbColor} ${trackColor}; } /* For generated code block */`;
+    }
+
+
+    function updateWidthStyle() { // Firefox scrollbar-width
+        widthStyle = getInputValue('widthStyle');
+        document.getElementById('styleWidthStyle').innerHTML = `
+          body, #${PREVIEW_DIV_ID} { scrollbar-width: ${widthStyle}; }
+          * { scrollbar-width: ${widthStyle}; } /* For generated code block */`;
+        updateDisplayCSS('displayWidthStyle', widthStyle);
+        updateStyleChecker();
+    }
+
+    function updateWidth() { // WebKit width
+        width = getInputValue('width');
+        document.getElementById('styleWidth').innerHTML = `
+          body::-webkit-scrollbar, #${PREVIEW_DIV_ID}::-webkit-scrollbar { width: ${width}px; }
+          *::-webkit-scrollbar { width: ${width}px; } /* For generated code block */`;
+        updateDisplayCSS('displayWidth', width);
+        updateStyleChecker();
+    }
+
+    function updateBorderRadius() {
+        borderRadius = getInputValue('borderRadius');
+        document.getElementById('styleBorderRadius').innerHTML = `
+          body::-webkit-scrollbar-thumb, #${PREVIEW_DIV_ID}::-webkit-scrollbar-thumb { border-radius: ${borderRadius}px; }
+          *::-webkit-scrollbar-thumb { border-radius: ${borderRadius}px; } /* For generated code block */`;
+        updateDisplayCSS('displayBorderRadius', borderRadius);
+        if (typeof borderWidth !== 'undefined') updateBorder(); 
+        updateStyleChecker();
+    }
+    
+    function updateBorder() {
+        borderWidth = getInputValue('borderWidth');
+        borderStyle = getInputValue('borderStyle');
+        borderColor = getInputValue('borderColor');
+        
+        document.getElementById('styleBorder').innerHTML = `
+          body::-webkit-scrollbar-thumb, #${PREVIEW_DIV_ID}::-webkit-scrollbar-thumb {
+            border: ${borderWidth}px ${borderStyle} ${borderColor};
+          }
+        `;
+        
+        updateDisplayCSS('displayBorderWidth', borderWidth);
+        updateDisplayCSS('displayBorderStyle', borderStyle);
+        updateDisplayCSS('displayBorderColor', borderColor);
+        updateStyleChecker();
+    }
+
+    /* ===== Setup ===== */
+    let debug = false; // Set to true to show debugger panel
+
+    // Declare global variables for scrollbar properties
+    let thumbColor, trackColor, widthStyle, width, borderRadius, borderWidth, borderStyle, borderColor;
+
+    function initializeAndUpdateAll() {
+        // Update functions will fetch values and set global variables
+        updateThumbColor();
+        updateTrackColor(); 
+        updateWidthStyle();
+        updateWidth();
+        updateBorderRadius(); 
+        updateBorder();       
+        updateStyleChecker();
+    }
+    
+    // Set dynamic copyright year
+    document.getElementById('copyrightYear').textContent = new Date().getFullYear();
+    
+    // Initialize everything
+    initializeAndUpdateAll();
+
+
+    /* ===== Event Listeners ===== */
+    document.getElementById('thumbColor').addEventListener("input", updateThumbColor);
+    document.getElementById('trackColor').addEventListener("input", updateTrackColor);
+    document.getElementById('widthStyle').addEventListener("change", updateWidthStyle);
+    document.getElementById('width').addEventListener("input", updateWidth);
+    document.getElementById('borderRadius').addEventListener("input", updateBorderRadius);
+    document.getElementById('borderWidth').addEventListener("input", updateBorder);
+    document.getElementById('borderStyle').addEventListener("change", updateBorder);
+    document.getElementById('borderColor').addEventListener("input", updateBorder);
+
+    document.getElementById('copyCssButton').addEventListener("click", function () {
+        const cssCodeElement = document.getElementById('cssCode');
+        let rawCssText;
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = cssCodeElement.innerHTML;
+        rawCssText = tempDiv.textContent || tempDiv.innerText || "";
+
+        copyToClipboard(rawCssText.trim());
+    });
+
+    // Modal Listeners
+    const openInfoModalButton = document.getElementById('openInfoModal');
+    const closeInfoModalButton = document.getElementById('closeInfoModal');
+    const dismissInfoModalButton = document.getElementById('dismissInfoModal');
+    const infoModal = document.getElementById('infoModal');
+
+    function showModal() {
+        infoModal.classList.remove('hidden');
+        setTimeout(() => {
+            infoModal.classList.remove('opacity-0');
+            infoModal.querySelector(':scope > div').classList.remove('scale-95');
+        }, 10);
+    }
+    function hideModal() {
+        infoModal.classList.add('opacity-0');
+        infoModal.querySelector(':scope > div').classList.add('scale-95');
+        setTimeout(() => {
+            infoModal.classList.add('hidden');
+        }, 300);
+    }
+
+    openInfoModalButton.addEventListener('click', showModal);
+    closeInfoModalButton.addEventListener('click', hideModal);
+    dismissInfoModalButton.addEventListener('click', hideModal);
+    infoModal.addEventListener('click', (event) => {
+        if (event.target === infoModal) hideModal();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !infoModal.classList.contains('hidden')) hideModal();
+    });
+
+    // Debugger Close Button Listener
+    const closeDebuggerButton = document.getElementById('closeDebuggerButton');
+    if (closeDebuggerButton) {
+        closeDebuggerButton.addEventListener('click', () => {
+            document.getElementById('debugger').classList.add('hidden');
+        });
+    }
+    </script>
+</body>
+</html>
